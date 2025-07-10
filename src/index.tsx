@@ -32,7 +32,7 @@ export interface ChatOptions extends UserInfo {
 
 export interface InitOptions {
   // chat key of zendesk account to init chat
-  key: string;
+  key?: string;
   // appId of your zendesk account
   appId: string;
   // clientId of your zendesk account
@@ -40,7 +40,7 @@ export interface InitOptions {
   // support url of zendesk account
   url: string;
   // id of the log custom field
-  logId: string;
+  logId?: string;
 }
 
 interface UserInfo extends AnonymousIdentity {

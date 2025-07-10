@@ -1,4 +1,5 @@
 #import "ReactNativeZendesk.h"
+#import <React/RCTConvert.h>
 #import <AnswerBotSDK/AnswerBotSDK.h>
 #import <MessagingSDK/MessagingSDK.h>
 #import <MessagingAPI/MessagingAPI.h>
@@ -10,7 +11,6 @@
 #import <SupportSDK/SupportSDK.h>
 #import <SupportProvidersSDK/SupportProvidersSDK.h>
 #import <ZendeskCoreSDK/ZendeskCoreSDK.h>
-#import <ZendeskSDK/ZendeskSDK.h>
 
 @interface NavigationControllerWithCompletion : UINavigationController
 @property (nonatomic, copy, nullable) RCTResponseSenderBlock completion;
@@ -52,54 +52,54 @@ RCT_EXPORT_METHOD(chatConfiguration: (NSDictionary *)options) {
 }
 
 
-RCT_EXPORT_METHOD(
-    createRequest: (NSDictionary *)params
-    resolver:(RCTPromiseResolveBlock)resolve
-    rejecter:(RCTPromiseRejectBlock)reject
-) {
-    ZDKCreateRequest *zdRequest = [ZDKCreateRequest new];
-    NSString *subject = [RCTConvert NSString:params[@"subject"]];
-    if (subject != nil) {
-        zdRequest.subject = subject;
-    }
-    NSString *formId = [RCTConvert NSString:params[@"formId"]];
-    if (formId != nil) {
-        zdRequest.ticketFormId = formId;
-    }
-    NSString *requestDescription = [RCTConvert NSString:request[@"requestDescription"]];
-    if (requestDescription != nil) {
-        zdRequest.requestDescription = requestDescription;
-    }
-    NSArray *tags = [RCTConvert NSArray:request[@"tags"]];
-    if (tags != nil) {
-        zdRequest.tags = tags;
-    }
+// RCT_EXPORT_METHOD(
+//     createRequest: (NSDictionary *)params
+//     resolver:(RCTPromiseResolveBlock)resolve
+//     rejecter:(RCTPromiseRejectBlock)reject
+// ) {
+//     ZDKCreateRequest *zdRequest = [ZDKCreateRequest new];
+//     NSString *subject = [RCTConvert NSString:params[@"subject"]];
+//     if (subject != nil) {
+//         zdRequest.subject = subject;
+//     }
+//     NSString *formId = [RCTConvert NSString:params[@"formId"]];
+//     if (formId != nil) {
+//         zdRequest.ticketFormId = formId;
+//     }
+//     NSString *requestDescription = [RCTConvert NSString:request[@"requestDescription"]];
+//     if (requestDescription != nil) {
+//         zdRequest.requestDescription = requestDescription;
+//     }
+//     NSArray *tags = [RCTConvert NSArray:request[@"tags"]];
+//     if (tags != nil) {
+//         zdRequest.tags = tags;
+//     }
     
-    ZDKRequestProvider *provider = [[ZDKRequestProvider alloc] init];
-    [provider createRequest:zdRequest withCallback:^(id result, NSError *error) {
-        if(error != nil){
-            // Handle the error
-            reject(@"No Ticket", @"Failed to create ticket", error);
-            // Log the error
-            [ZDKLogger e:error.description];
-            return;
-        }
-        // Handle the success
-        ZDKDispatcherResponse * payload = result;
-        NSString *data = [[NSString alloc] initWithData:payload.data encoding:NSUTF8StringEncoding];
+//     ZDKRequestProvider *provider = [[ZDKRequestProvider alloc] init];
+//     [provider createRequest:zdRequest withCallback:^(id result, NSError *error) {
+//         if(error != nil){
+//             // Handle the error
+//             reject(@"No Ticket", @"Failed to create ticket", error);
+//             // Log the error
+//             [ZDKLogger e:error.description];
+//             return;
+//         }
+//         // Handle the success
+//         ZDKDispatcherResponse * payload = result;
+//         NSString *data = [[NSString alloc] initWithData:payload.data encoding:NSUTF8StringEncoding];
         
-        // Deserialize the data JSON string to an NSDictionary
-        NSError *jsonError;
-        NSData *objectData = [data dataUsingEncoding:NSUTF8StringEncoding];
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:objectData
-                                                                 options:NSJSONReadingMutableContainers
-                                                                   error:&jsonError];
-        resolve(json);
-    }];
-}
+//         // Deserialize the data JSON string to an NSDictionary
+//         NSError *jsonError;
+//         NSData *objectData = [data dataUsingEncoding:NSUTF8StringEncoding];
+//         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:objectData
+//                                                                  options:NSJSONReadingMutableContainers
+//                                                                    error:&jsonError];
+//         resolve(json);
+//     }];
+// }
 
 
-RCT_EXPORT_METHOD(openTicket:(NSDictionary*)params (RCTResponseSenderBlock)onClose) {
+RCT_EXPORT_METHOD(openTicket:(NSDictionary*)params onClose:(RCTResponseSenderBlock)onClose) {
     [self executeOnMainThread:^{
         [self openTicketFunction:params onClose:onClose];
     }];
@@ -210,9 +210,14 @@ RCT_EXPORT_METHOD(init:(NSDictionary *)options) {
       clientId: options[@"clientId"]
       zendeskUrl: options[@"url"]];
   [ZDKSupport initializeWithZendesk: [ZDKClassicZendesk instance]];
-  [ZDKChat initializeWithAccountKey:options[@"key"] appId:options[@"appId"] queue:dispatch_get_main_queue()];
+  // initialize chat
+  if (options[@"key"] != nil) {
+    [ZDKChat initializeWithAccountKey:options[@"key"] appId:options[@"appId"] queue:dispatch_get_main_queue()];
+  }
   [ZDKAnswerBot initializeWithZendesk:[ZDKClassicZendesk instance] support:[ZDKSupport instance]];
-  logId = options[@"logId"];
+  if (options[@"logId"] != nil) {
+    logId = options[@"logId"];
+  }
 
 }
 RCT_EXPORT_METHOD(initChat:(NSString *)key) {
@@ -285,7 +290,7 @@ RCT_EXPORT_METHOD(getTotalNewResponses:(RCTPromiseResolveBlock)resolve rejecter:
     UINavigationController *navControl = [[UINavigationController alloc] initWithRootViewController: controller];
     [topController presentViewController:navControl animated:YES completion:nil];
 }
-- (void) openTicketFunction:(NSDictionary*)params (RCTResponseSenderBlock)onClose {
+- (void) openTicketFunction:(NSDictionary*)params onClose:(nullable RCTResponseSenderBlock)onClose {
     [self initGlobals];
     if(logId != nil){
         [self addTicketCustomFieldFunction:logId  withValue:mutableLog];
@@ -299,7 +304,7 @@ RCT_EXPORT_METHOD(getTotalNewResponses:(RCTPromiseResolveBlock)resolve rejecter:
     }
     NSString *formId = [RCTConvert NSString:params[@"formId"]];
     if (formId != nil) {
-        config.ticketFormId = formId;
+        config.ticketFormID = formId;
     }
 
     NSArray *tags = [RCTConvert NSArray:params[@"tags"]];
