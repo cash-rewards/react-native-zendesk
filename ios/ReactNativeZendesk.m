@@ -52,54 +52,58 @@ RCT_EXPORT_METHOD(chatConfiguration: (NSDictionary *)options) {
 }
 
 
-// RCT_EXPORT_METHOD(
-//     createRequest: (NSDictionary *)params
-//     resolver:(RCTPromiseResolveBlock)resolve
-//     rejecter:(RCTPromiseRejectBlock)reject
-// ) {
-//     ZDKCreateRequest *zdRequest = [ZDKCreateRequest new];
-//     NSString *subject = [RCTConvert NSString:params[@"subject"]];
-//     if (subject != nil) {
-//         zdRequest.subject = subject;
-//     }
-//     NSString *formId = [RCTConvert NSString:params[@"formId"]];
-//     if (formId != nil) {
-//         zdRequest.ticketFormId = formId;
-//     }
-//     NSString *requestDescription = [RCTConvert NSString:request[@"requestDescription"]];
-//     if (requestDescription != nil) {
-//         zdRequest.requestDescription = requestDescription;
-//     }
-//     NSArray *tags = [RCTConvert NSArray:request[@"tags"]];
-//     if (tags != nil) {
-//         zdRequest.tags = tags;
-//     }
+RCT_EXPORT_METHOD(
+    createRequest: (NSDictionary *)params
+    resolver:(RCTPromiseResolveBlock)resolve
+    rejecter:(RCTPromiseRejectBlock)reject
+) {
+    ZDKCreateRequest *zdRequest = [ZDKCreateRequest new];
+    NSString *subject = [RCTConvert NSString:params[@"subject"]];
+    if (subject != nil) {
+        zdRequest.subject = subject;
+    }
+    NSString *formId = [RCTConvert NSString:params[@"formId"]];
+    if (formId != nil) {
+        zdRequest.ticketFormId = formId;
+    }
+    NSString *requestDescription = [RCTConvert NSString:params[@"requestDescription"]];
+    if (requestDescription != nil) {
+        zdRequest.requestDescription = requestDescription;
+    }
+    NSArray *tags = [RCTConvert NSArray:params[@"tags"]];
+    if (tags != nil) {
+        zdRequest.tags = tags;
+    }
     
-//     ZDKRequestProvider *provider = [[ZDKRequestProvider alloc] init];
-//     [provider createRequest:zdRequest withCallback:^(id result, NSError *error) {
-//         if(error != nil){
-//             // Handle the error
-//             reject(@"No Ticket", @"Failed to create ticket", error);
-//             // Log the error
-//             [ZDKLogger e:error.description];
-//             return;
-//         }
-//         // Handle the success
-//         ZDKDispatcherResponse * payload = result;
-//         NSString *data = [[NSString alloc] initWithData:payload.data encoding:NSUTF8StringEncoding];
+    ZDKRequestProvider *provider = [[ZDKRequestProvider alloc] init];
+    [provider createRequest:zdRequest withCallback:^(id result, NSError *error) {
+        if(error != nil){
+            // Handle the error
+            reject(@"No Ticket", @"Failed to create ticket", error);
+            return;
+        }
+        // Handle the success
+        ZDKDispatcherResponse * payload = result;
+        NSString *data = [[NSString alloc] initWithData:payload.data encoding:NSUTF8StringEncoding];
         
-//         // Deserialize the data JSON string to an NSDictionary
-//         NSError *jsonError;
-//         NSData *objectData = [data dataUsingEncoding:NSUTF8StringEncoding];
-//         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:objectData
-//                                                                  options:NSJSONReadingMutableContainers
-//                                                                    error:&jsonError];
-//         resolve(json);
-//     }];
-// }
+        // Deserialize the data JSON string to an NSDictionary
+        NSError *jsonError;
+        NSData *objectData = [data dataUsingEncoding:NSUTF8StringEncoding];
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:objectData
+                                                                 options:NSJSONReadingMutableContainers
+                                                                   error:&jsonError];
+        resolve(json);
+    }];
+}
 
 
-RCT_EXPORT_METHOD(openTicket:(NSDictionary*)params onClose:(RCTResponseSenderBlock)onClose) {
+RCT_EXPORT_METHOD(openTicket:(NSDictionary*)params) {
+    [self executeOnMainThread:^{
+        [self openTicketFunction:params onClose:nil];
+    }];
+}
+
+RCT_EXPORT_METHOD(openTicketWithCallback:(NSDictionary*)params onClose:(RCTResponseSenderBlock)onClose) {
     [self executeOnMainThread:^{
         [self openTicketFunction:params onClose:onClose];
     }];

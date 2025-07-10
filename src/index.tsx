@@ -127,7 +127,15 @@ export function dismiss(): void {
 
 // function to open a ticket
 export function openTicket(request: Request, onClose?: () => void): void {
-  ReactNativeZendesk.openTicket(request, onClose);
+  if (onClose) {
+    ReactNativeZendesk.openTicketWithCallback(request, onClose);
+  } else {
+    ReactNativeZendesk.openTicket(request);
+  }
+}
+
+export function createRequest(request: Request): Promise<Request> {
+  return ReactNativeZendesk.createRequest(request);
 }
 
 // function to shows all the tickets of the user
@@ -177,6 +185,7 @@ class IoReactNativeZendesk {
   static resetTags = resetTags;
   static resetLog = resetLog;
   static dismiss = dismiss;
+  static createRequest = createRequest;
   static openTicket = openTicket;
   static showTickets = showTickets;
   static hasOpenedTickets = hasOpenedTickets;
