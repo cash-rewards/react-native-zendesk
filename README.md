@@ -1,4 +1,4 @@
-# @pagopa/io-react-native-zendesk
+# @cash-rewards/react-native-zendesk
 
 A react-native wrapper for Zendesk Unified SDK
 

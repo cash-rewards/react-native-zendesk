@@ -63,6 +63,13 @@ export interface AnonymousIdentity {
   email?: string;
 }
 
+export interface Request {
+  subject?: string;
+  formId?: string;
+  tags?: Array<string>;
+  customFields?: Record<string, any>;
+}
+
 // normal init function when you want to use all of the sdks
 export function init(initializationOptins: InitOptions): void {
   ReactNativeZendesk.init(initializationOptins);
@@ -119,8 +126,8 @@ export function dismiss(): void {
 }
 
 // function to open a ticket
-export function openTicket(onClose: () => void): void {
-  ReactNativeZendesk.openTicket(onClose);
+export function openTicket(request: Request, onClose?: () => void): void {
+  ReactNativeZendesk.openTicket(request, onClose);
 }
 
 // function to shows all the tickets of the user
