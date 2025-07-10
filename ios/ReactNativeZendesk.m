@@ -10,6 +10,7 @@
 #import <SupportSDK/SupportSDK.h>
 #import <SupportProvidersSDK/SupportProvidersSDK.h>
 #import <ZendeskCoreSDK/ZendeskCoreSDK.h>
+#import <ZendeskSDK/ZendeskSDK.h>
 
 @interface NavigationControllerWithCompletion : UINavigationController
 @property (nonatomic, copy, nullable) RCTResponseSenderBlock completion;
@@ -50,9 +51,57 @@ RCT_EXPORT_METHOD(chatConfiguration: (NSDictionary *)options) {
     }
 }
 
-RCT_EXPORT_METHOD(openTicket:(RCTResponseSenderBlock)onClose) {
+
+RCT_EXPORT_METHOD(
+    createRequest: (NSDictionary *)params
+    resolver:(RCTPromiseResolveBlock)resolve
+    rejecter:(RCTPromiseRejectBlock)reject
+) {
+    ZDKCreateRequest *zdRequest = [ZDKCreateRequest new];
+    NSString *subject = [RCTConvert NSString:params[@"subject"]];
+    if (subject != nil) {
+        zdRequest.subject = subject;
+    }
+    NSString *formId = [RCTConvert NSString:params[@"formId"]];
+    if (formId != nil) {
+        zdRequest.ticketFormId = formId;
+    }
+    NSString *requestDescription = [RCTConvert NSString:request[@"requestDescription"]];
+    if (requestDescription != nil) {
+        zdRequest.requestDescription = requestDescription;
+    }
+    NSArray *tags = [RCTConvert NSArray:request[@"tags"]];
+    if (tags != nil) {
+        zdRequest.tags = tags;
+    }
+    
+    ZDKRequestProvider *provider = [[ZDKRequestProvider alloc] init];
+    [provider createRequest:zdRequest withCallback:^(id result, NSError *error) {
+        if(error != nil){
+            // Handle the error
+            reject(@"No Ticket", @"Failed to create ticket", error);
+            // Log the error
+            [ZDKLogger e:error.description];
+            return;
+        }
+        // Handle the success
+        ZDKDispatcherResponse * payload = result;
+        NSString *data = [[NSString alloc] initWithData:payload.data encoding:NSUTF8StringEncoding];
+        
+        // Deserialize the data JSON string to an NSDictionary
+        NSError *jsonError;
+        NSData *objectData = [data dataUsingEncoding:NSUTF8StringEncoding];
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:objectData
+                                                                 options:NSJSONReadingMutableContainers
+                                                                   error:&jsonError];
+        resolve(json);
+    }];
+}
+
+
+RCT_EXPORT_METHOD(openTicket:(NSDictionary*)params (RCTResponseSenderBlock)onClose) {
     [self executeOnMainThread:^{
-        [self openTicketFunction:onClose];
+        [self openTicketFunction:params onClose:onClose];
     }];
 }
 RCT_EXPORT_METHOD(showTickets:(RCTResponseSenderBlock)onClose) {
@@ -236,15 +285,40 @@ RCT_EXPORT_METHOD(getTotalNewResponses:(RCTPromiseResolveBlock)resolve rejecter:
     UINavigationController *navControl = [[UINavigationController alloc] initWithRootViewController: controller];
     [topController presentViewController:navControl animated:YES completion:nil];
 }
-- (void) openTicketFunction:(RCTResponseSenderBlock)onClose {
+- (void) openTicketFunction:(NSDictionary*)params (RCTResponseSenderBlock)onClose {
     [self initGlobals];
     if(logId != nil){
         [self addTicketCustomFieldFunction:logId  withValue:mutableLog];
     }
 
     ZDKRequestUiConfiguration * config = [ZDKRequestUiConfiguration new];
-    config.customFields = customFields.allValues;
-    config.tags = tags;
+
+    NSString *subject = [RCTConvert NSString:params[@"subject"]];
+    if (subject != nil) {
+        config.subject = subject;
+    }
+    NSString *formId = [RCTConvert NSString:params[@"formId"]];
+    if (formId != nil) {
+        config.ticketFormId = formId;
+    }
+
+    NSArray *tags = [RCTConvert NSArray:params[@"tags"]];
+    if (tags != nil) {
+        config.tags = tags;
+    }
+
+    NSDictionary *customFields = [RCTConvert NSDictionary:params[@"customFields"]];
+    if (customFields != nil) {
+        NSMutableDictionary *zdCustomFields = [[NSMutableDictionary alloc] init];
+        [customFields enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL * _Nonnull stop) {
+            NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
+            f.numberStyle = NSNumberFormatterDecimalStyle;
+            NSNumber *customFieldID = [f numberFromString:key];
+            ZDKCustomField *customField = [[ZDKCustomField alloc] initWithFieldId:customFieldID value:value];
+            [zdCustomFields setObject:customField forKey:customFieldID];
+        }];
+        config.customFields = zdCustomFields.allValues;
+    }
 
     UIViewController *openTicketController = [ZDKRequestUi buildRequestUiWith:@[config]];
     UIViewController *topController = [UIApplication sharedApplication].keyWindow.rootViewController;
@@ -253,7 +327,9 @@ RCT_EXPORT_METHOD(getTotalNewResponses:(RCTPromiseResolveBlock)resolve rejecter:
     }
     currentController = topController;
     NavigationControllerWithCompletion *navControl = [[NavigationControllerWithCompletion alloc] initWithRootViewController: openTicketController];
-    navControl.completion = onClose;
+    if (onClose != nil) {
+      navControl.completion = onClose;
+    }
     
     [topController presentViewController:navControl animated:YES completion:nil];
   }

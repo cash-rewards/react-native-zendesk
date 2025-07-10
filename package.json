@@ -1,6 +1,6 @@
 {
-  "name": "@pagopa/io-react-native-zendesk",
-  "version": "0.3.30",
+  "name": "@cash-rewards/react-native-zendesk",
+  "version": "0.3.31",
   "description": "A react-native wrapper for Zendesk Unified SDK",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -40,16 +40,16 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pagopa/pagopa-react-native-zendesk.git"
+    "url": "git+https://github.com/cash-rewards/react-native-zendesk.git"
   },
-  "author": "PagoPa Spa (https://github.com/pagopa)",
+  "author": "Cashrewards (https://github.com/cash-rewards)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/pagopa/pagopa-react-native-zendesk/issues"
+    "url": "https://github.com/cash-rewards/react-native-zendesk/issues"
   },
-  "homepage": "https://github.com/pagopa/pagopa-react-native-zendesk#readme",
+  "homepage": "https://github.com/cash-rewards/react-native-zendesk#readme",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
     "@react-native/eslint-config": "^0.72.2",
